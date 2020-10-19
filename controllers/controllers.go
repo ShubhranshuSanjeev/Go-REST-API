@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"go_rest_api/helpers"
 	"go_rest_api/models"
@@ -223,10 +222,10 @@ func GetMeetingsByTimeRange(st time.Time, ed time.Time) helpers.MeetingList {
 		if err != nil {
 			continue
 		}
-
 		//Checking if the start and end time falls within the given time range
-		tmpStartTime, _ := time.Parse(time.UnixDate, tmp.StartTime)
-		tmpEndTime, _ := time.Parse(time.UnixDate, tmp.EndTime)
+		tmpStartTime, _ := time.Parse(time.RFC3339Nano, tmp.StartTime)
+		tmpEndTime, _ := time.Parse(time.RFC3339Nano, tmp.EndTime)
+
 		if (tmpStartTime.After(st) || tmpStartTime.Equal(st)) &&
 			(tmpEndTime.Before(ed) || tmpEndTime.Equal(ed)) {
 			meets = append(meets, tmp)
@@ -247,12 +246,8 @@ func GetParticipantMeetings(email string) helpers.MeetingList {
 	meetingsCollection := helpers.DBClient.Database("appointy").Collection("meetings")
 	participantMeetingCollection := helpers.DBClient.Database("appointy").Collection("participantMeeting")
 
-	query := `{"$eq":` + email + `}`
-	var bsonMap bson.M
-
 	// Fetching all the meetings the participant is a part of
-	err := json.Unmarshal([]byte(query), &bsonMap)
-	filter := bson.M{"participantEmail": bsonMap}
+	filter := bson.M{"participantEmail": bson.M{"$eq": email}}
 
 	cur, err := participantMeetingCollection.Find(context.TODO(), filter)
 
